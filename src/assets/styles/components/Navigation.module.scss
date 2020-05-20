@@ -1,0 +1,36 @@
+.navigation {
+  flex-basis: auto;
+  flex-grow: 0;
+  flex-shrink: 0;
+  @media (min-width: 799px) {
+    width: 200px;
+  }
+  @media (max-width: 800px) {
+    height: 10px;
+  }
+}
+:global(.ms-Nav) {
+  width: 100%;
+}
+
+.nav {
+  @media (max-width: 800px) {
+    display: none;
+  }
+}
+
+.menu {
+  padding: 0;
+  border: 0;
+  min-width: 50px;
+  height: 50px;
+  top: -50px;
+  background-color: #666;
+  color: #fff;
+  @media (min-width: 799px) {
+    display: none;
+  }
+}
+:global(.ms-Button-menuIcon) {
+  display: none!important;
+}

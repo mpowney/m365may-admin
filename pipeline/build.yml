@@ -1,0 +1,31 @@
+name: $(SourceBranchName)_1.0.$(Date:yyMM).$(DayOfMonth)$(Rev:r)
+
+jobs:
+- job: Bundle
+  displayName: Bundle
+  steps:
+  - task: NodeTool@0
+    displayName: 'Use Node 10.15.3'
+    inputs:
+      versionSpec: 10.15.3
+  - task: Npm@1
+    displayName: 'npm ci'
+    inputs:
+      command: custom
+      verbose: false
+      customCommand: 'ci'
+  - task: Npm@1
+    displayName: 'npm run build'
+    inputs:
+      command: custom
+      verbose: false
+      customCommand: 'run build'
+  - task: ArchiveFiles@2
+    displayName: 'Archive dist folder'
+    inputs:
+      rootFolderOrFile: '$(System.DefaultWorkingDirectory)/build'
+      includeRootFolder: false
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildNumber)-build.zip'
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish artifacts: drop'
+

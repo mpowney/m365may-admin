@@ -1,0 +1,37 @@
+@import "normalize";
+
+html,
+body,
+#appContainer {
+  font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system,
+    BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+  margin: 0;
+  height: 100%;
+  color: #333;
+}
+
+a {
+  color: #00a7f5;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 100;
+}
+
+#viewport {
+  padding-left: 48px;
+  padding-right: 48px;
+  flex-grow: 1;
+}
+
+@media (max-width: 800px) {
+  #viewport {
+    padding-left: 10px;
+    padding-right: 10px;
+  }  
+}
+
