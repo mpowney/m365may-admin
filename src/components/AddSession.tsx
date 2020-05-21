@@ -3,6 +3,7 @@ import * as React from "react";
 import { LogFactory } from "../common/utils/InitLogger";
 import { TextField } from "office-ui-fabric-react/lib/TextField";
 import { PrimaryButton, DefaultButton } from "office-ui-fabric-react/lib/Button";
+import { Slider } from 'office-ui-fabric-react/lib/Slider';
 
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
   
@@ -21,11 +22,11 @@ interface IAddSessionProps {
     rowKey?: string;
 }
 interface IAddSessionState {
-    Session?: ISession;
+    session?: ISession;
     redirectTo: string;
     videoLink: string;
     startRedirectingMinutes: number;
-    hasGenerated: boolean;
+    hasRedirect: boolean;
     generateError: boolean;
     isLoading: boolean;
     editMode: boolean;
@@ -46,7 +47,7 @@ export class AddSession extends React.Component<IAddSessionProps, IAddSessionSta
             redirectTo: '',
             videoLink: '',
             startRedirectingMinutes: -10,
-            hasGenerated: false,
+            hasRedirect: false,
             generateError: false,
             isLoading: false,
             editMode: false,
@@ -54,7 +55,6 @@ export class AddSession extends React.Component<IAddSessionProps, IAddSessionSta
             statsMarkers: null
         }
 
-        this.generateClick = this.generateClick.bind(this);
         this.cancelClick = this.cancelClick.bind(this);
         this.saveClick = this.saveClick.bind(this);
         this.checkForEnterKey = this.checkForEnterKey.bind(this);
@@ -72,77 +72,70 @@ export class AddSession extends React.Component<IAddSessionProps, IAddSessionSta
             this.setState({
                 isLoading: true
             });
-            const response = await ApiHelper.get(`/_api/v1/redirect/${this.props.rowKey}`, true);
-            log.debug(`init() response from api get ${JSON.stringify(response)}`)
+            const sessionResponse = await ApiHelper.get(`/calendar/session/${this.props.rowKey}?noTrack`, false);
+            log.debug(`init() response from session api get ${JSON.stringify(sessionResponse)}`)
             this.setState({
-                redirectTo: response.redirectTo,
-                hasGenerated: true,
+                session: {
+                    speakers: (sessionResponse.speakers as any[]),
+                    rowKey: sessionResponse.id,
+                    title: sessionResponse.title,
+                    description: sessionResponse.description
+                },
                 editMode: true,
-                isLoading: false
             });
+
+            try {
+
+                const response = await ApiHelper.get(`/_api/v1/redirect/${this.props.rowKey}`, true);
+                log.debug(`init() response from redirect api get ${JSON.stringify(response)}`)
+                this.setState({
+                    redirectTo: response.redirectTo,
+                    videoLink: response.videoLink,
+                    hasRedirect: true,
+                    editMode: true,
+                    isLoading: false
+                });
+            }
+            catch {
+                this.setState({
+                    editMode: true,
+                    isLoading: false
+                });
+            }
         }
         
     }
 
-    updateState(event: React.FormEvent, variable: string, value?: string) {
+    updateState(event: React.FormEvent | undefined, variable: string, value?: string | number) {
         log.info(
-            `updateState() executing from element [${event.target}] with variable [${variable}]`
+            `updateState() executing from element [${event?.target}] with variable [${variable}]`
         );
         const updateState: any = { };
         updateState[variable] = value || "";
         this.setState(updateState);
     }
 
-    async generateClick() {
-
-        log.info(`generateClick() executing`);
-
-        if (!this.isValidURL(this.state.redirectTo)) {
-            return;    
-        }
-
-        if (this.state.hasGenerated) {
-            this.props.dismissClick();
-            return;
-        }
-
-        this.setState({
-            isLoading: true
-        });
-        
-        try {
-
-            await ApiHelper.post(`/_api/v1/redirect`, {
-                redirectTo: this.state.redirectTo,
-                videoLink: this.state.videoLink,
-                rowKey: this.props.rowKey
-            }, true);
-            await this.props.refreshCallback();
-
-        }
-        catch {
-
-            this.setState({
-                generateError: true,
-                isLoading: false
-            });
-        }
-
-        this.setState({
-            isLoading: false
-        })
-
-    }
-
     async saveClick() {
 
-        await ApiHelper.patch(`/_api/v1/redirect/${this.props.rowKey}`, {
-            redirectTo: this.state.redirectTo,
-            videoLink: this.state.videoLink,
-            startRedirectingMinutes: this.state.startRedirectingMinutes
-        }, true);
+        if (this.state.hasRedirect) {
+            await ApiHelper.patch(`/_api/v1/redirect/${this.props.rowKey}`, {
+                redirectTo: this.state.redirectTo,
+                videoLink: this.state.videoLink,
+                startRedirectingMinutes: this.state.startRedirectingMinutes
+            }, true);
+    
+        } else {
+            await ApiHelper.post(`/_api/v1/redirect`, {
+                rowKey: this.props.rowKey,
+                redirectTo: this.state.redirectTo,
+                videoLink: this.state.videoLink,
+                startRedirectingMinutes: this.state.startRedirectingMinutes
+            }, true);
+    
+        }
+        
         this.setState({
-            hasGenerated: true
+            hasRedirect: true
         });
         await this.props.refreshCallback();
         this.props.dismissClick();
@@ -151,7 +144,7 @@ export class AddSession extends React.Component<IAddSessionProps, IAddSessionSta
 
     checkForEnterKey(ev: any) {
         if (ev.keyCode === 13) {
-            this.generateClick();
+            this.saveClick();
         }
     }
 
@@ -197,7 +190,8 @@ export class AddSession extends React.Component<IAddSessionProps, IAddSessionSta
 
     render() {
 
-        const generateButtonActive = this.isValidURL(this.state.redirectTo);
+        const saveButtonActive = (this.state.redirectTo === '' || this.isValidURL(this.state.redirectTo))
+            && (this.state.videoLink === '' || this.isValidURL(this.state.videoLink));
         const geoUrl = "https://raw.githubusercontent.com/zcreativelabs/react-simple-maps/master/topojson-maps/world-110m.json";
 
         log.debug(`render() this.state.statsMarkers: ${JSON.stringify(this.state.statsMarkers)}`);
@@ -205,9 +199,12 @@ export class AddSession extends React.Component<IAddSessionProps, IAddSessionSta
         return (
             <div className={`${styles.addSession} ${this.state.statsExpanded && styles.statsExpanded}`}>
             
-                <h2 id={`modalHeader`}>{this.state.isLoading ? `Loading...` : this.state.editMode ? `Edit a redirect` : `Add a redirect`}</h2>
+                <h2 id={`modalHeader`}>{this.state.isLoading ? `Loading...` : `Session details`}</h2>
+                <TextField value={this.state.session?.title} label={`Title`} readOnly />
+                <TextField value={this.state.session?.description} label={`Description`} readOnly multiline />
                 <TextField value={this.state.redirectTo} label={`Live event`} onKeyUp={this.checkForEnterKey} disabled={this.state.isLoading} placeholder={`Enter the live event URL`} className={styles.SessionField} onChange={(event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, value?: string) => this.updateState(event, `redirectTo`, value) } componentRef={this.urlRef} />
                 <TextField value={this.state.videoLink} label={`Video`} onKeyUp={this.checkForEnterKey} disabled={this.state.isLoading} placeholder={`Enter the video URL`} className={styles.SessionField} onChange={(event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, value?: string) => this.updateState(event, `videoLink`, value) } componentRef={this.urlRef} />
+                <Slider value={this.state.startRedirectingMinutes} label={`Live event doors open (minutes)`} min={-60} max={60} showValue onChange={(value?: number) => this.updateState(undefined, `startRedirectingMinutes`, value) } />
 
                 { this.state.statsExpanded && <div className={styles.statsSection}>
                     <ComposableMap
@@ -251,13 +248,9 @@ export class AddSession extends React.Component<IAddSessionProps, IAddSessionSta
 
 
                 <div className={styles.buttonContainer}>
-                    { this.state.editMode ? 
-                        <PrimaryButton text={`Save`} onClick={this.saveClick} className={styles.generateButton} disabled={!generateButtonActive} />
-                        :
-                        <PrimaryButton text={this.state.hasGenerated ? `Close` : `Generate`} onClick={this.generateClick} className={styles.generateButton} disabled={!generateButtonActive} />
-                    }
+                    <PrimaryButton text={`Save`} onClick={this.saveClick} className={styles.generateButton} disabled={!saveButtonActive} />
                     <DefaultButton text={`Cancel`} onClick={this.cancelClick} className={styles.cancelButton} />
-                    {this.state.hasGenerated && <DefaultButton text={`Stats`} onClick={this.statsClick} /> }
+                    {this.state.hasRedirect && <DefaultButton text={`Stats`} onClick={this.statsClick} /> }
                 </div>
             </div>
         );

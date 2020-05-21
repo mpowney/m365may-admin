@@ -34,15 +34,19 @@ const meta = {
 };
 
 export interface ISession {
-    timestamp: Date;
-    partitionKey: string;
+    timestamp?: Date;
+    partitionKey?: string;
+    title: string;
+    description: string;
     speakers: any[];
     rowKey: string;
-    redirectTo: string;
+    redirectTo?: string;
+    videoLink?: string;
+    startRedirectingMinutes?: number;
     clickCount?: number;
     geoCount?: any;
-    startsAt: Date;
-    endsAt: Date;
+    startsAt?: Date;
+    endsAt?: Date;
     calendarClickCount?: number;
     videoClickCount?: number;
 }
@@ -62,7 +66,20 @@ interface ISessionsState extends ISessionsPersistedState {
     SessionsSearchData?: ISession[];
     isSessionModalOpen: boolean;
     numberOfSessionsSelected: number;
+    filterText: string;
 }
+
+const dummySession: ISession = {
+    timestamp: new Date(),
+    partitionKey: "dummy",
+    rowKey: "dummy",
+    redirectTo: "dummy",
+    title: "dummy",
+    description: "dummy",
+    speakers: [],
+    startsAt: new Date(),
+    endsAt: new Date()
+};
 
 export default class SessionsEntry extends React.Component<ISessionsProps, ISessionsState> {
     static STORE_CLASSES = [];
@@ -81,23 +98,15 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
         this.initSessions = this.initSessions.bind(this);
         this.deleteSessions = this.deleteSessions.bind(this);
         this.restoreSessions = this.restoreSessions.bind(this);
-
-        const dummySession: ISession = {
-            timestamp: new Date(),
-            partitionKey: "dummy",
-            rowKey: "dummy",
-            redirectTo: "dummy",
-            speakers: [],
-            startsAt: new Date(),
-            endsAt: new Date()
-        };
+        this.searchBoxChange = this.searchBoxChange.bind(this);
 
         this.state = {
             isSessionModalOpen: false,
             numberOfSessionsSelected: 0,
             SessionsSorting: [ { fieldName: 'startsAt', isSorted: true, isSortedDescending: false } ],
             SessionsLoading: true,
-            SessionsSearch: "",
+            SessionsSearch: '',
+            filterText: '',
             showSession: undefined,
             SessionsSourceData: [
                 { ...dummySession, rowKey: 'dummy1' }, { ...dummySession, rowKey: 'dummy2' }, { ...dummySession, rowKey: 'dummy3' }, { ...dummySession, rowKey: 'dummy4' }, { ...dummySession, rowKey: 'dummy5' }
@@ -122,12 +131,18 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
     private renderSearchBox() {
         return (<SearchBox
             styles={{ root: { marginTop: 4, width: 180 } }}
-            placeholder="Search"
-            onSearch={(newValue: any) => log.debug(`Search with value ${newValue}`)}
+            placeholder="Filter"
+            onSearch={(newValue: any) => {this.searchBoxChange(undefined, newValue)}}
             onFocus={() => log.debug("Search onFocus called")}
             onBlur={() => log.debug("Search onBlur called")}
-            onChange={() => log.debug("Search onChange called")}
+            onChange={this.searchBoxChange}
           />);
+    }
+
+    searchBoxChange(event?: React.ChangeEvent<HTMLInputElement> | undefined, newValue?: string | undefined) {
+        this.setState({
+            filterText: newValue || ''
+        });
     }
 
     private sessionsColumnClick = (
@@ -207,6 +222,10 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
             log.debug(`User logged in, calling API`);
             try {
 
+                this.setState({
+                    SessionsLoading: true
+                });
+                
                 const dataPromises = [ApiHelper.get(`/_api/v1/redirects`, true), ApiHelper.get(`/data/sessions`, true)]
                 
                 const data = await Promise.all(dataPromises);
@@ -335,36 +354,32 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
     render() {
 
         const commandBarItems = [];
-        commandBarItems.push({
-            key: "addSession",
-            text: "Add a Session",
-            iconProps: { iconName: "AddLink" },
-            onClick: this.addButtonClick
-        });
+        // commandBarItems.push({
+        //     key: "addSession",
+        //     text: "Add a Session",
+        //     iconProps: { iconName: "AddLink" },
+        //     onClick: this.addButtonClick
+        // });
         commandBarItems.push({
             key: "refresh",
             text: "Refresh",
             iconProps: { iconName: "Refresh" },
             onClick: this.refreshButtonClick
         });
-        commandBarItems.push({
-            key: "recycleSession",
-            text: `Remove`,
-            iconProps: { iconName: "RecycleBin" },
-            disabled: this.state.numberOfSessionsSelected === 0,
-            onClick: this.deleteSessions
+        // commandBarItems.push({
+        //     key: "recycleSession",
+        //     text: `Remove`,
+        //     iconProps: { iconName: "RecycleBin" },
+        //     disabled: this.state.numberOfSessionsSelected === 0,
+        //     onClick: this.deleteSessions
+        // });
+        commandBarItems.push(            {
+            key: "searchBox",
+            onRender: this.renderSearchBox.bind(this)
         });
 
-        const commandBarFarItems = [
-            {
-                key: "searchBox",
-                onRender: this.renderSearchBox.bind(this)
-            },
-            {
-                key: "filter",
-                text: "Filter",
-                iconProps: { iconName: "Filter" }
-            }
+
+        const commandBarFarItems: any[] = [
         ];
 
         const dragOptions: IDragOptions = {
@@ -388,10 +403,15 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
         const columns = new SessionsColumns();
         // const items = this.state.SessionsSourceData;
 
-        const items = this.applySorting(
+        let items = this.applySorting(
             (this.state.SessionsSearchData || this.state.SessionsSourceData),
             this.state.SessionsSorting
         );
+
+        if (this.state.filterText.length > 0) {
+            items = items.filter((item: ISession) => { 
+                return `${(item.title || '').toLocaleLowerCase()} ${(item.description || '').toLocaleLowerCase()} ${item.rowKey} ${item.speakers.toString().toLocaleLowerCase()}`.indexOf(this.state.filterText.toLocaleLowerCase()) > -1 });
+        }
 
         return (
             <>
@@ -405,12 +425,12 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
                         onKeysPressed={this.refreshButtonClick}/>
                     <DocumentMeta {...meta} />
                     <Header />
-                    <h1>{`Active sessions`}</h1>
+                    <h1>{`All sessions`}</h1>
                     <CommandBar styles={{ root: { padding: 0 } }}
                         items={commandBarItems}
                         farItems={commandBarFarItems} />
 
-                    <MarqueeSelection selection={this._selection}>
+                    <MarqueeSelection isEnabled={!this.state.isSessionModalOpen} selection={this._selection}>
                         <DetailsList
                             items={items}
                             compact={false}

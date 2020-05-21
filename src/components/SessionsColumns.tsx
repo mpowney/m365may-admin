@@ -62,11 +62,32 @@ export default class LinksColumns {
                 isPadded: true
             },
             {
+                key: `title`,
+                name: "Title",
+                fieldName: "title",
+                minWidth: 70,
+                maxWidth: 160,
+                isResizable: true,
+                sortAscendingAriaLabel: "Sorted A to Z",
+                sortDescendingAriaLabel: "Sorted Z to A",
+                data: "string",
+                onColumnClick: (event: any, column: any) => {
+                    onColumnClick(event, column);
+                },
+                onRender: (item: ISession) => {
+                    return isLoading ? (
+                        <Shimmer width={`${50 + Math.floor(Math.random() * 10)}%`} />
+                    ) : (
+                        <>{item.title}</>
+                    );
+                },
+                isPadded: true
+            },            {
                 key: `redirectTo`,
                 name: "Redirect to",
                 fieldName: "redirectTo",
                 minWidth: 100,
-                maxWidth: 240,
+                maxWidth: 200,
                 isResizable: true,
                 sortAscendingAriaLabel: "Sorted A to Z",
                 sortDescendingAriaLabel: "Sorted Z to A",
@@ -88,7 +109,7 @@ export default class LinksColumns {
                 name: "Start",
                 fieldName: "startsAt",
                 minWidth: 80,
-                maxWidth: 140,
+                maxWidth: 100,
                 isResizable: true,
                 sortAscendingAriaLabel: "Sorted earliest to latest",
                 sortDescendingAriaLabel: "Sorted latest to earliest",
@@ -101,7 +122,7 @@ export default class LinksColumns {
                     return isLoading ? 
                         <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> 
                         : 
-                        <>{DateTime.fromISO(item.startsAt).toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}</>;
+                        <>{DateTime.fromISO(item.startsAt).toLocaleString(DateTime.DATETIME_MED)}</>;
                 },
                 isPadded: true
             },
@@ -110,7 +131,7 @@ export default class LinksColumns {
                 name: "End",
                 fieldName: "endsAt",
                 minWidth: 80,
-                maxWidth: 140,
+                maxWidth: 100,
                 isResizable: true,
                 sortAscendingAriaLabel: "Sorted earliest to latest",
                 sortDescendingAriaLabel: "Sorted latest to earliest",
@@ -123,7 +144,7 @@ export default class LinksColumns {
                     return isLoading ? 
                         <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> 
                         : 
-                        <>{DateTime.fromISO(item.endsAt).toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}</>;
+                        <>{DateTime.fromISO(item.endsAt).toLocaleString(DateTime.DATETIME_MED)}</>;
                 },
                 isPadded: true
             },            
