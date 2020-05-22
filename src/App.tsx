@@ -35,6 +35,7 @@ export interface IAppState {
     userLoggedIn: boolean;
     loginModalOpen: boolean;
     loginModalRecover: boolean;
+    permissionsModalOpen: boolean;
     user: IUser | null;
 }
 
@@ -51,6 +52,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
             userLoggedIn: false,
             loginModalOpen: false,
             loginModalRecover: false,
+            permissionsModalOpen: false,
             user: null
         };
         
@@ -58,6 +60,8 @@ export default class App extends React.Component<IAppProps, IAppState> {
         this.handleLogout = this.handleLogout.bind(this);
         this.hideLoginModal = this.hideLoginModal.bind(this);
         this.renewAccessToken = this.renewAccessToken.bind(this);
+        this.hidePermissionsModal = this.hidePermissionsModal.bind(this);
+        this.checkPermissions = this.checkPermissions.bind(this);
 
         this.init().then(() => {
             this.initLogin();
@@ -107,7 +111,7 @@ export default class App extends React.Component<IAppProps, IAppState> {
                 },
                 loginModalOpen: false,
                 loginModalRecover: false
-            });
+            }, this.checkPermissions);
 
         }
         else {
@@ -121,6 +125,23 @@ export default class App extends React.Component<IAppProps, IAppState> {
         this.initLogin();
     }
 
+    public async checkPermissions() {
+        if (this.state.userLoggedIn) {
+            const user = await ApiHelper.get(`/_api/v1/user/me`, true);
+            if (!user || !user.permissions || !user.permissions.length || user.permissions.length === 0) {
+                this.setState({
+                    permissionsModalOpen: true
+                });
+            }
+            if (user && user.permissions && user.permissions.length && user.permissions.length > 0 
+                && user.permissions.indexOf("/Session/Administrator") === -1 && user.permissions.indexOf("/User/Administrator") === -1) {
+                this.setState({
+                    permissionsModalOpen: true
+                });
+            }
+        }
+    }
+
     public async handleLogout() {
         this.apiHelper.logout();
     }
@@ -129,7 +150,13 @@ export default class App extends React.Component<IAppProps, IAppState> {
         this.setState({
             loginModalOpen: false,
             loginModalRecover: false
-        })
+        });
+    }
+
+    public hidePermissionsModal() {
+        this.setState({
+            permissionsModalOpen: false
+        });
     }
 
     render() {
@@ -183,6 +210,16 @@ export default class App extends React.Component<IAppProps, IAppState> {
                             <h1>Sign in to {PACKAGE_NAME}</h1>
                             <p>To use this service you must first sign in</p>
                             <PrimaryButton text={`Sign in`} onClick={this.handleLogin} />
+                        </div>
+                </Modal>
+
+                <Modal
+                    isOpen={this.state.permissionsModalOpen}
+                    onDismiss={this.hidePermissionsModal}
+                    isBlocking={true}>
+                        <div className={styles.permissionsModalContainer}>
+                            <h1>No access to {PACKAGE_NAME}</h1>
+                            <p>To use this service you must first be given access. Please ask the site adinistrators to add your account: {this.state.user?.loginName}</p>
                         </div>
                 </Modal>
 

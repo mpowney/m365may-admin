@@ -18,8 +18,9 @@
   flex-shrink: 1;
 }
 
-.loginModalContainer {
+.loginModalContainer, .permissionsModalContainer {
   min-width: 400px;
+  max-width: 600px;
 
   @media (max-width: 400px) {
     min-width: 240px;
