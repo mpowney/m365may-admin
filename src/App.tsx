@@ -63,12 +63,30 @@ export default class App extends React.Component<IAppProps, IAppState> {
         this.hidePermissionsModal = this.hidePermissionsModal.bind(this);
         this.checkPermissions = this.checkPermissions.bind(this);
 
+        this.apiHelper = new ApiHelper();
+
+    }
+
+    componentDidMount() {
+
+        const secured = window.location.href.indexOf("localhost") >= 0 ||
+                            window.location.protocol.toLowerCase() === "https:"
+
+        if (!secured) {
+
+            log.debug(`componentDidMount() swapping to SSL`);
+
+            window.location.href = `https://${window.location.hostname}${
+                window.location.port ? `:${window.location.port}` : ``
+            }${window.location.pathname}${window.location.search}`;
+            return;
+
+        }
+        
         this.init().then(() => {
             this.initLogin();
         });
-
-        this.apiHelper = new ApiHelper();
-
+    
     }
 
     public async init() {
