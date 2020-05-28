@@ -9,7 +9,8 @@ export default class LinksColumns {
     public Columns(
         onColumnClick: any,
         sorting: ISortingInformation[],
-        isLoading: boolean
+        isLoading: boolean,
+        discreteMode: boolean
     ): IColumn[] {
 
         const { DateTime } = require("luxon");
@@ -163,9 +164,10 @@ export default class LinksColumns {
                     onColumnClick(event, column);
                 },
                 onRender: (item: ISession) => {
-                    return isLoading ? <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> : <>{item.calendarClickCount}</>;
+                    return isLoading ? <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> : discreteMode ? <span className={`discreteMode`}></span> : <>{item.calendarClickCount}</>;
                 },
-                isPadded: true
+                isPadded: true,
+                hidden: discreteMode
             },
             {
                 key: `clickCount`,
@@ -182,7 +184,7 @@ export default class LinksColumns {
                     onColumnClick(event, column);
                 },
                 onRender: (item: ISession) => {
-                    return isLoading ? <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> : <>{item.clickCount}</>;
+                    return isLoading ? <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> : discreteMode ? <span className={`discreteMode`}></span> : <>{item.clickCount}</>;
                 },
                 isPadded: true
             },
@@ -201,7 +203,7 @@ export default class LinksColumns {
                     onColumnClick(event, column);
                 },
                 onRender: (item: ISession) => {
-                    return isLoading ? <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> : <>{item.videoClickCount}</>;
+                    return isLoading ? <Shimmer width={`${70 + Math.floor(Math.random() * 10)}%`} /> : discreteMode ? <span className={`discreteMode`}></span> : <>{item.videoClickCount}</>;
                 },
                 isPadded: true
             }

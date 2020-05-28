@@ -57,6 +57,7 @@ interface ISessionsProps {
 interface ISessionsPersistedState {
     SessionsSorting: ISortingInformation[];
     SessionsSearch: string;
+    discreteMode: boolean;
 }
 interface ISessionsState extends ISessionsPersistedState {
     SessionsLoading: boolean;
@@ -99,8 +100,10 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
         this.deleteSessions = this.deleteSessions.bind(this);
         this.restoreSessions = this.restoreSessions.bind(this);
         this.searchBoxChange = this.searchBoxChange.bind(this);
+        this.discreteButtonClick = this.discreteButtonClick.bind(this);
 
         this.state = {
+            discreteMode: true,
             isSessionModalOpen: false,
             numberOfSessionsSelected: 0,
             SessionsSorting: [ { fieldName: 'startsAt', isSorted: true, isSortedDescending: false } ],
@@ -286,6 +289,12 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
         this.initSessions();
     }
 
+    discreteButtonClick() {
+        this.setState({
+            discreteMode: !this.state.discreteMode
+        });
+    }
+
     addButtonClick() {
         this.setState({
             isSessionModalOpen: true,
@@ -373,7 +382,13 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
         //     disabled: this.state.numberOfSessionsSelected === 0,
         //     onClick: this.deleteSessions
         // });
-        commandBarItems.push(            {
+        commandBarItems.push({
+            key: "discreteMode",
+            text: `Discrete mode: ${this.state.discreteMode ? `on` : `off`}`,
+            iconProps: { iconName: "RedEye" },
+            onClick: this.discreteButtonClick
+        });
+        commandBarItems.push({
             key: "searchBox",
             onRender: this.renderSearchBox.bind(this)
         });
@@ -437,7 +452,8 @@ export default class SessionsEntry extends React.Component<ISessionsProps, ISess
                             columns={columns.Columns(
                                 this.sessionsColumnClick,
                                 this.state.SessionsSorting,
-                                this.state.SessionsLoading
+                                this.state.SessionsLoading,
+                                this.state.discreteMode
                             )}
                             selectionMode={SelectionMode.multiple}
                             getKey={this._getKey}
