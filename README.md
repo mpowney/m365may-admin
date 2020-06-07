@@ -1,12 +1,20 @@
 # M365 May Admin
 
-This project is an admin interface used for the [M365 May online event](https://www.m365may.com).  It enables people who are event co-ordinators to update session details.  It was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project is an admin interface used for the [M365 May online event](https://www.m365may.com).  It enables people who are event co-ordinators to update session details. 
+
+The project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app) and the [Typescript add-on](https://create-react-app.dev/docs/adding-typescript/).
 
 ## Pre-requisites
 
 This is one of three repo's used to deliver the M365 May session handling. The other two repo's are:
 * [M365 May Client](https://github.com/mpowney/m365may-client) client side code for attendees to browse sessions
 * [M365 May API](https://github.com/mpowney/m365may-api) API built as an Azure Function app container to anonymous and authenticated access to data
+
+The solution requires the following:
+* An event registered with [Sessionize](https://sessionize.com/) to organise the sessions of the event
+
+Additionally, the following API is used:
+* [Free IP Geolocation API](https://freegeoip.app/) to lookup geo location data from IP addresses of users
 
 ## Development environment
 
